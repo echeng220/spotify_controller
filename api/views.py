@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.http import JsonResponse
 from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -6,17 +7,24 @@ from rest_framework.response import Response
 from .models import Room
 from .serializers import RoomSerializer, CreateRoomSerializer
 
+class BaseView(APIView):
+    def establish_session(self, format=None):
+        if not self.request.session.exists(self.request.session.session_key):
+            self.request.session.create()
+
 
 class RoomView(generics.ListAPIView):
     queryset = Room.objects.all()
     serializer_class = RoomSerializer
 
 
-class GetRoomView(APIView):
+class GetRoomView(BaseView):
     serializer_class = RoomSerializer
     lookup_url_kwarg = 'code'
 
     def get(self, request, format=None):
+        self.establish_session()
+
         code = request.GET.get(self.lookup_url_kwarg)
         if code:
             room = Room.objects.filter(code=code)
@@ -33,12 +41,11 @@ class GetRoomView(APIView):
             resp_body = {'Bad request': 'Code parameter not found in request'}
         return Response(resp_body, resp_status)
 
-class CreateRoomView(APIView):
+class CreateRoomView(BaseView):
     serializer_class = CreateRoomSerializer
     
     def post(self, request, format=None):
-        if not self.request.session.exists(self.request.session.session_key):
-            self.request.session.create()
+        self.establish_session()
 
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
@@ -61,13 +68,12 @@ class CreateRoomView(APIView):
         return Response(RoomSerializer(room).data, status=status.HTTP_201_CREATED)
 
 
-class JoinRoomView(APIView):
+class JoinRoomView(BaseView):
     serializer_class = RoomSerializer
     lookup_url_kwarg = 'code'
 
     def post(self, request, format=None):
-        if not self.request.session.exists(self.request.session.session_key):
-            self.request.session.create()
+        self.establish_session()
 
         code = request.data.get(self.lookup_url_kwarg)
         if code:
@@ -85,3 +91,13 @@ class JoinRoomView(APIView):
             status_code = status.HTTP_400_BAD_REQUEST
 
         return Response(resp_body, status_code)
+
+
+class UserInRoom(BaseView):
+    def get(self, request, format=None):
+        self.establish_session()
+
+        data = {
+            'code': self.request.session.get('room_code')
+        }
+        return JsonResponse(data, status=status.HTTP_200_OK)

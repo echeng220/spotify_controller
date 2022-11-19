@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate, redirect } from "react-router-dom";
 import Button from "@material-ui/core/Button";
 import Grid from "@material-ui/core/Grid";
@@ -27,7 +27,6 @@ export default function CreateRoomPage() {
         setGuestCanPause(e.target.value === 'true' ? true : false);
     }
 
-    // TODO: Fix me!!!
     function handleRoomButtonPressed() {
 
         const requestOptions = {

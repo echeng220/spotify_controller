@@ -101,3 +101,21 @@ class UserInRoom(BaseView):
             'code': self.request.session.get('room_code')
         }
         return JsonResponse(data, status=status.HTTP_200_OK)
+
+
+class LeaveRoom(BaseView):
+    def post(self, request, format=None):
+        msg = 'did nothing'
+        
+        if 'room_code' in self.request.session:
+            room_code = self.request.session.pop('room_code')
+
+            host_id = self.request.session.session_key
+            room_results = Room.objects.filter(host=host_id)
+
+            if room_results:
+                room = room_results[0]
+                room.delete()
+                msg = f'deleted room {room_code}'
+
+        return Response({'message': msg}, status=status.HTTP_200_OK)

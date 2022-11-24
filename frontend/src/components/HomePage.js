@@ -19,13 +19,11 @@ export default function HomePage(props) {
         fetch('/api/user-in-room')
             .then((response) => response.json())
             .then((data) => {
-                console.log(`HomePage useEffect data: ${JSON.stringify(data)}`);
                 setRoomcode(data.code);
             })
     }, []);
 
     function clearRoomCode() {
-        console.log('clearRoomCode hit');
         setRoomcode(null);
     }
 

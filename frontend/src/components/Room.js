@@ -14,9 +14,6 @@ export default function Room(props) {
 
     const { roomCode } = useParams();
 
-    console.log('component re-rendered');
-    console.log(showSettings.toString());
-
     function getRoomDetails() {
         return fetch(`/api/get-room?code=${roomCode}`)
             .then((response) => {
@@ -38,7 +35,7 @@ export default function Room(props) {
     
     useEffect(() => {
         getRoomDetails();
-    }, [roomCode])
+    }, [])
 
     function leaveButtonPressed() {
         console.log('leave button pressed');
@@ -71,11 +68,11 @@ export default function Room(props) {
             <Grid container spacing={1}>
                 <Grid item xs={12} align="center">
                     <CreateRoomPage 
-                        update={true}
-                        votesToSkip={votesToSkip}
-                        guestCanPause={guestCanPause}
+                        updateRoom={true}
+                        defaultVotesToSkip={votesToSkip}
+                        defaultGuestCanPause={guestCanPause}
                         roomCode={roomCode}
-                        // updateCallback={}
+                        updateCallback={getRoomDetails}
                     />
                 </Grid>
                 <Grid item xs={12} align="center">
@@ -105,7 +102,7 @@ export default function Room(props) {
             </Grid>
             <Grid item xs={12} align="center">
                 <Typography variant="h5" component="h5">
-                    Can Pause: {guestCanPause.toString()}
+                    Guests Can Pause: {guestCanPause.toString()}
                 </Typography>
             </Grid>
             {isHost ? renderSettingsButton(): null}

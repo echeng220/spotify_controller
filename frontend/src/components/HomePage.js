@@ -12,7 +12,7 @@ import JoinRoomPage from "./JoinRoomPage";
 import CreateRoomPage from "./CreateRoomPage";
 import Room from "./Room";
 
-export default function HomePage() {
+export default function HomePage(props) {
     const [roomCode, setRoomcode] = useState(null);
 
     useEffect(() => {
@@ -23,6 +23,11 @@ export default function HomePage() {
                 setRoomcode(data.code);
             })
     }, []);
+
+    function clearRoomCode() {
+        console.log('clearRoomCode hit');
+        setRoomcode(null);
+    }
 
     function renderHomePage() {
         return (
@@ -61,7 +66,7 @@ export default function HomePage() {
                     />
                     <Route path='/join' element={<JoinRoomPage />} />
                     <Route path='/create' element={<CreateRoomPage />} />
-                    <Route path='/room/:roomCode' element={<Room />} />
+                    <Route path='/room/:roomCode' element={<Room leaveRoomCallback={clearRoomCode}/>} />
                 </Routes>
             </Router>
     );

@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from .models import Room
-from .serializers import RoomSerializer, CreateRoomSerializer
+from .serializers import RoomSerializer, CreateRoomSerializer, UpdateRoomSerializer
 
 class BaseView(APIView):
     def establish_session(self, format=None):
@@ -119,3 +119,33 @@ class LeaveRoom(BaseView):
                 msg = f'deleted room {room_code}'
 
         return Response({'message': msg}, status=status.HTTP_200_OK)
+
+
+class UpdateRoomView(BaseView):
+    serializer_class = UpdateRoomSerializer
+
+    def patch(self, request, format=None):
+        self.establish_session()
+        serializer = self.serializer_class(data=request.data)
+
+        if serializer.is_valid():
+            guest_can_pause = serializer.data.get('guestCanPause')
+            votes_to_skip = serializer.data.get('votesToSkip')
+            code = serializer.data.get('code')
+
+            queryset = Room.objects.filter(code=code)
+            if not queryset.exists():
+                return Response({'message': 'Room not found'}, status.HTTP_404_NOT_FOUND)
+
+            room = queryset[0]
+            user_id = self.request.session.session_key
+
+            if room.host != user_id:
+                return Response({'message': 'You are not the host of this room'}, status.HTTP_403_FORBIDDEN)
+
+            room.guestCanPause = guest_can_pause
+            room.votesToSkip = votes_to_skip
+            room.save(update_fields=['guestCanPause', 'votesToSkip'])
+            return Response(RoomSerializer(room).data, status.HTTP_200_OK)
+        
+        return Response({'message': 'Invalid data'}, status.HTTP_400_BAD_REQUEST)

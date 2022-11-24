@@ -1,34 +1,44 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Grid, Button, Typography } from '@material-ui/core';
+import CreateRoomPage from './CreateRoomPage';
+
 
 export default function Room(props) {
     const [votesToSkip, setVotesToSkip] = useState(0);
     const [guestCanPause, setGuestCanPause] = useState(false);
     const [isHost, setIsHost] = useState(false);
+    const [showSettings, setShowSettings] = useState(false);
 
     const navigate = useNavigate();
 
     const { roomCode } = useParams();
 
-    useEffect(() => {
-        fetch(`/api/get-room?code=${roomCode}`)
-        .then((response) => {
-            if (!response.ok) {
-                console.log(`Room useEffect: ${props}`);
-                navigate('/');
-            } else {
-                return response.json()
-            }
-        })
-        .then((data) => {
-            console.log(`data: ${JSON.stringify(data)}`);
+    console.log('component re-rendered');
+    console.log(showSettings.toString());
 
-            setVotesToSkip(data.votesToSkip);
-            setGuestCanPause(data.guestCanPause);
-            setIsHost(data.isHost);
-        });
-    }, [])
+    function getRoomDetails() {
+        return fetch(`/api/get-room?code=${roomCode}`)
+            .then((response) => {
+                if (!response.ok) {
+                    console.log(`Room useEffect: ${props}`);
+                    navigate('/');
+                } else {
+                    return response.json()
+                }
+            })
+            .then((data) => {
+                console.log(`data: ${JSON.stringify(data)}`);
+
+                setVotesToSkip(data.votesToSkip);
+                setGuestCanPause(data.guestCanPause);
+                setIsHost(data.isHost);
+            });
+    }
+    
+    useEffect(() => {
+        getRoomDetails();
+    }, [roomCode])
 
     function leaveButtonPressed() {
         console.log('leave button pressed');
@@ -41,11 +51,41 @@ export default function Room(props) {
         fetch('/api/leave-room', requestOptions)
             .then((response) => {
                 console.log('leave-room api triggered');
+                props.leaveRoomCallback();
                 navigate('/');
             })
     }
 
-
+    function renderSettingsButton() {
+        return (
+            <Grid item xs={12} align="center">
+                <Button variant="contained" color="primary" onClick={() => setShowSettings(true)}>
+                    Settings
+                </Button>
+            </Grid>
+        )
+    }
+    
+    if (showSettings) {
+        return (
+            <Grid container spacing={1}>
+                <Grid item xs={12} align="center">
+                    <CreateRoomPage 
+                        update={true}
+                        votesToSkip={votesToSkip}
+                        guestCanPause={guestCanPause}
+                        roomCode={roomCode}
+                        // updateCallback={}
+                    />
+                </Grid>
+                <Grid item xs={12} align="center">
+                    <Button variant="contained" color="secondary" onClick={() => setShowSettings(false)}>
+                        Close Settings
+                    </Button>
+                </Grid>
+            </Grid>
+        );
+    }
     return (
         <Grid>
             <Grid item xs={12} align="center">
@@ -68,6 +108,7 @@ export default function Room(props) {
                     Can Pause: {guestCanPause.toString()}
                 </Typography>
             </Grid>
+            {isHost ? renderSettingsButton(): null}
             <Grid item xs={12} align="center">
                 <Button variant="contained" color="secondary" onClick={leaveButtonPressed}>
                     Leave Room
@@ -77,12 +118,3 @@ export default function Room(props) {
 
     )
 }
-
-/*
-<div>      
-    <h3>{roomCode}</h3>
-    <p>{votesToSkip}</p>
-    <p>Guest Can Pause: {guestCanPause.toString()}</p>
-    <p>Host: {isHost.toString()}</p>
-</div>
-*/

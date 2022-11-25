@@ -4,8 +4,20 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 
+
+from api.models import Room
+from api.utils import get_room_by_code
 from .credentials import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
-from .utils import update_or_create_user_tokens, establish_session, is_spotify_authenticated, BASE_URL
+
+from .utils import (
+    update_or_create_user_tokens,
+    establish_session,
+    is_spotify_authenticated,
+    execute_spotify_api_request,
+    is_valid_song,
+    create_song_dict,
+    AUTH_URL
+)
 
 
 class AuthURL(APIView):
@@ -13,7 +25,7 @@ class AuthURL(APIView):
         scopes = 'user-read-playback-state user-modify-playback-state user-read-currently-playing'
         url = Request(
             'GET',
-            f'{BASE_URL}/authorize',
+            f'{AUTH_URL}/authorize',
             params={
                 'scope': scopes,
                 'response_type': 'code',
@@ -36,7 +48,7 @@ def spotify_callback(request, format=None):
     error = request.GET.get('error')
 
     response = post(
-        f'{BASE_URL}/api/token',
+        f'{AUTH_URL}/api/token',
         data={
             'grant_type': 'authorization_code',
             'code': code,
@@ -55,3 +67,23 @@ def spotify_callback(request, format=None):
     update_or_create_user_tokens(session_key, access_token, token_type, expires_in, refresh_token)
 
     return redirect('frontend:')
+
+
+class CurrentSongView(APIView):
+    def get(self, request, format=None):
+        room_code = self.request.session.get('room_code')
+        room = get_room_by_code(code=room_code)
+
+        if not room:
+            return Response({'message': 'You are not in a room!'}, status.HTTP_404_NOT_FOUND)
+
+        host = room.host
+        endpoint = 'player/currently-playing'
+        response = execute_spotify_api_request(host, endpoint)
+
+        if not is_valid_song(response):
+            return Response({'message': 'No song playing!'}, status.HTTP_204_NO_CONTENT)
+        
+        song_dict = create_song_dict(response)
+        
+        return Response(song_dict, status.HTTP_200_OK)

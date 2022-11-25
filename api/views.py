@@ -6,6 +6,7 @@ from rest_framework.response import Response
 
 from .models import Room
 from .serializers import RoomSerializer, CreateRoomSerializer, UpdateRoomSerializer
+from .utils import get_room_by_code, get_room_by_host_id
 
 class BaseView(APIView):
     def establish_session(self, format=None):
@@ -27,10 +28,10 @@ class GetRoomView(BaseView):
 
         code = request.GET.get(self.lookup_url_kwarg)
         if code:
-            room = Room.objects.filter(code=code)
+            room = get_room_by_code(code=code)
             if room:
-                data = RoomSerializer(room[0]).data
-                data['isHost'] = self.request.session.session_key == room[0].host
+                data = RoomSerializer(room).data
+                data['isHost'] = self.request.session.session_key == room.host
                 resp_status = status.HTTP_200_OK
                 resp_body = data
             else:
@@ -51,16 +52,15 @@ class CreateRoomView(BaseView):
         if serializer.is_valid():
             guest_can_pause = serializer.data.get('guestCanPause')
             votes_to_skip = serializer.data.get('votesToSkip')
-            host = self.request.session.session_key
+            host_id = self.request.session.session_key
 
-            queryset = Room.objects.filter(host=host)
-            if queryset.exists():
-                room = queryset[0]
+            room = get_room_by_host_id(host_id=host_id)
+            if room:
                 room.guestCanPause = guest_can_pause
                 room.votesToSkip = votes_to_skip
                 room.save(update_fields=['guestCanPause', 'votesToSkip'])
             else:
-                room = Room(host=host, guestCanPause=guest_can_pause, votesToSkip=votes_to_skip)
+                room = Room(host=host_id, guestCanPause=guest_can_pause, votesToSkip=votes_to_skip)
                 room.save()
 
             self.request.session['room_code'] = room.code
@@ -77,9 +77,8 @@ class JoinRoomView(BaseView):
 
         code = request.data.get(self.lookup_url_kwarg)
         if code:
-            room_result = Room.objects.filter(code=code)
-            if room_result:
-                room = room_result[0]
+            room = get_room_by_code(code=code)
+            if room:
                 self.request.session['room_code'] = code
                 resp_body = {'message': 'Room joined!'}
                 status_code = status.HTTP_200_OK
@@ -111,10 +110,9 @@ class LeaveRoom(BaseView):
             room_code = self.request.session.pop('room_code')
 
             host_id = self.request.session.session_key
-            room_results = Room.objects.filter(host=host_id)
+            room = get_room_by_host_id(host_id=host_id)
 
-            if room_results:
-                room = room_results[0]
+            if room:
                 room.delete()
                 msg = f'deleted room {room_code}'
 
@@ -133,11 +131,10 @@ class UpdateRoomView(BaseView):
             votes_to_skip = serializer.data.get('votesToSkip')
             code = serializer.data.get('code')
 
-            queryset = Room.objects.filter(code=code)
-            if not queryset.exists():
+            room = get_room_by_code(code=code)
+            if not room:
                 return Response({'message': 'Room not found'}, status.HTTP_404_NOT_FOUND)
 
-            room = queryset[0]
             user_id = self.request.session.session_key
 
             if room.host != user_id:

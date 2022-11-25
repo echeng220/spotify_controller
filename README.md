@@ -43,6 +43,7 @@ Install React:
 
 Install pre-built components:
 ```cmd npm install @material-ui/core```
+```cmd npm install @mui/material @emotion/react @emotion/styled```
 
 So we can use async / await in .js code:
 ```cmd npm install @babel/plugin-proposal-class-properties```
@@ -52,6 +53,7 @@ Re-route pages from React app:
 
 Get icons from material-ui:
 ```cmd npm install @material-ui/icons```
+```cmd npm install @mui/icons-material```
 
 Note: To resolve npm dependency errors (see [post](https://stackoverflow.com/questions/72596908/could-not-resolve-dependency-error-peer-react16-8-0-17-0-0-from-materia)):
 ```cmd npm config set legacy-eer-deps true```

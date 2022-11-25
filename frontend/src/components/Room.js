@@ -9,16 +9,17 @@ export default function Room(props) {
     const [guestCanPause, setGuestCanPause] = useState(false);
     const [isHost, setIsHost] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
+    const [spotifyAuthenticated, setSpotifyAuthenticated] = useState(false);
 
     const navigate = useNavigate();
 
     const { roomCode } = useParams();
 
     function getRoomDetails() {
+        console.log('getRoomDetails');
         return fetch(`/api/get-room?code=${roomCode}`)
             .then((response) => {
                 if (!response.ok) {
-                    console.log(`Room useEffect: ${props}`);
                     navigate('/');
                 } else {
                     return response.json()
@@ -30,12 +31,39 @@ export default function Room(props) {
                 setVotesToSkip(data.votesToSkip);
                 setGuestCanPause(data.guestCanPause);
                 setIsHost(data.isHost);
+
+                console.log(`isHost: ${isHost.toString()}`);
+                console.log(`data isHost: ${data.isHost.toString()}`);
+
+                if (data.isHost) {
+                    authenticateSpotify();
+                }
             });
     }
     
     useEffect(() => {
+        console.log('useEffect');
         getRoomDetails();
+        console.log(`useEffect isHost: ${isHost.toString()}`);
     }, [])
+
+    function authenticateSpotify() {
+        console.log('authenticateSpotify');
+
+        fetch('/spotify/is-authenticated')
+            .then((response) => response.json())
+            .then((data) => {
+                setSpotifyAuthenticated(data.status);
+
+                if (!data.status) {
+                    fetch('/spotify/get-auth-url')
+                        .then((response) => response.json())
+                        .then((data) => {
+                            window.location.replace(data.url);
+                        });
+                }
+            });
+    }
 
     function leaveButtonPressed() {
         console.log('leave button pressed');
@@ -105,7 +133,7 @@ export default function Room(props) {
                     Guests Can Pause: {guestCanPause.toString()}
                 </Typography>
             </Grid>
-            {isHost ? renderSettingsButton(): null}
+            {isHost ? renderSettingsButton() : null}
             <Grid item xs={12} align="center">
                 <Button variant="contained" color="secondary" onClick={leaveButtonPressed}>
                     Leave Room

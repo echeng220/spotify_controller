@@ -1,0 +1,5 @@
+import os
+
+CLIENT_ID = '22155a83439e4f3c96703aaf286945f5'
+CLIENT_SECRET = '9cefccc277774ddc83f5017f15940b73'
+REDIRECT_URI = 'http://127.0.0.1:8000/spotify/redirect'

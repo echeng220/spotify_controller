@@ -78,13 +78,11 @@ export default function Room(props) {
                 if (!response.ok) {
                     return {};
                 } else {
-                    console.log(response); // TODO: FIX RESPONSE JSON ERROR!
                     return response.json();
                 }
             })
             .then((data) => {
                  setSong(data);
-                 console.log(`songdata: ${data}`);
             })
     }
 

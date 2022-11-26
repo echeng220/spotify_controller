@@ -14,6 +14,8 @@ from .utils import (
     establish_session,
     is_spotify_authenticated,
     execute_spotify_api_request,
+    play_song,
+    pause_song,
     is_valid_song,
     create_song_dict,
     AUTH_URL
@@ -87,3 +89,28 @@ class CurrentSongView(APIView):
         song_dict = create_song_dict(response)
         
         return Response(song_dict, status.HTTP_200_OK)
+
+
+class PlaySongView(APIView):
+    def put(self, response, format=None):
+        room_code = self.request.session.get('room_code')
+        room = get_room_by_code(room_code)
+
+        if self.request.session.session_key == room.host or room.guestCanPause:
+            play_song(room.host)
+            return Response({}, status.HTTP_204_NO_CONTENT)
+
+        return Response({}, status.HTTP_403_FORBIDDEN)
+
+
+class PauseSongView(APIView):
+    def put(self, response, format=None):
+        room_code = self.request.session.get('room_code')
+        room = get_room_by_code(room_code)
+
+        if self.request.session.session_key == room.host or room.guestCanPause:
+            pause_song(room.host)
+            return Response({}, status.HTTP_204_NO_CONTENT)
+
+        return Response({}, status.HTTP_403_FORBIDDEN)
+

@@ -72,3 +72,12 @@ Django BE renders template, then passes template to React to manage.
 To run development script:
 ```npm run dev```
 where "dev" was defined in the package.json file.
+
+## Run App on Local Area Network
+```cmd python manage.py runserver 127.0.0.1:8000```
+
+- In settings.py, add '0.0.0.0' to `ALLOWED_HOSTS`
+- Find IP of device running the application (laptop)
+- On mobile phone, go to {IP address}:8000
+
+- If this is unsuccessful, add the local IP address into `ALLOWED_HOSTS`

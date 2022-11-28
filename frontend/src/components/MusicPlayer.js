@@ -8,7 +8,9 @@ export default function MusicPlayer({
         artist='Artist',
         isPlaying=false,
         time=0,
-        duration=1
+        duration=1,
+        votes=0,
+        votesToSkip=2
     }) {
 
     const songProgress = (time / duration) * 100;
@@ -31,6 +33,15 @@ export default function MusicPlayer({
         fetch('/spotify/pause', requestOptions);
     }
 
+    function skipSong() {
+        const requestOptions = {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        };
+
+        fetch('/spotify/skip', requestOptions);
+    }
+
     return(
         <Card>
             <Grid container alignItems='center'>
@@ -44,11 +55,14 @@ export default function MusicPlayer({
                     <Typography color="textSecondary" variant="subtitle1">
                         { artist }
                     </Typography>
+                    <Typography color="textSecondary" variant="subtitle2">
+                        Votes to Skip: { votes } /{" "} { votesToSkip }
+                    </Typography>
                     <div>
                         <IconButton onClick={() => { isPlaying ? pauseSong() : playSong() }}>
                             { isPlaying ? <Pause /> : <PlayArrow /> }
                         </IconButton>
-                        <IconButton>
+                        <IconButton onClick={() => skipSong()}>
                             <SkipNext />
                         </IconButton>
                     </div>

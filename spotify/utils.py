@@ -2,7 +2,7 @@ from datetime import timedelta
 from django.utils import timezone
 from requests import post, put, get
 
-from .models import SpotifyToken
+from .models import SpotifyToken, Vote
 from .credentials import CLIENT_ID, CLIENT_SECRET
 
 AUTH_URL = 'https://accounts.spotify.com'
@@ -78,6 +78,7 @@ def execute_spotify_api_request(session_id, endpoint, post_=False, put_=False):
         'Authorization': f'Bearer {tokens.accessToken}'
     }
 
+    # TODO: Catch errors from POST / PUT responses
     if post_:
         resp_body = post(BASE_API_URL + endpoint, headers=headers).json()
         print(resp_body)
@@ -98,6 +99,9 @@ def play_song(session_id):
 def pause_song(session_id):
     return execute_spotify_api_request(session_id, 'player/pause', put_=True)
 
+def skip_song(session_id):
+    return execute_spotify_api_request(session_id, 'player/next', post_=True)
+
 def is_valid_song(response):
     if 'error' in response or 'item' not in response:
         return False
@@ -114,18 +118,26 @@ def create_artist_string(response_item):
     
     return artist_string
 
-def create_song_dict(response):
+def create_song_dict(room, response):
     item = response.get('item')
+    song_id = item.get('id')
+
+    votes = Vote.objects.filter(room=room, songId=song_id)
 
     song_dict = {
-            'songId': item.get('id'),
+            'songId': song_id,
             'title': item.get('name'),
             'artist': create_artist_string(item),
             'duration': item.get('duration_ms'),
             'time': response.get('progress_ms'),
             'imageUrl': item.get('album').get('images')[0].get('url'),
             'isPlaying': response.get('is_playing'),
-            'votes': 0
+            'votes': len(votes),
+            'votesToSkip': room.votesToSkip
         }
 
     return song_dict
+
+def get_votes(room_code, song_id=None):
+    votes = Vote.objects.filter(room=room_code, songId=song_id)
+    return votes

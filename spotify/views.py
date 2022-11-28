@@ -6,6 +6,7 @@ from rest_framework.response import Response
 
 
 from api.models import Room
+from .models import Vote
 from api.utils import get_room_by_code
 from .credentials import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
 
@@ -16,8 +17,10 @@ from .utils import (
     execute_spotify_api_request,
     play_song,
     pause_song,
+    skip_song,
     is_valid_song,
     create_song_dict,
+    get_votes,
     AUTH_URL
 )
 
@@ -86,9 +89,19 @@ class CurrentSongView(APIView):
         if not is_valid_song(response):
             return Response({'message': 'No song playing!'}, status.HTTP_204_NO_CONTENT)
         
-        song_dict = create_song_dict(response)
+        song_dict = create_song_dict(room, response)
+
+        self.update_room_song(room, song_dict['songId'])
         
         return Response(song_dict, status.HTTP_200_OK)
+
+    def update_room_song(self, room, song_id):
+        current_song = room.currentSong
+
+        if current_song != song_id:
+            room.currentSong = song_id
+            room.save(update_fields=['currentSong'])
+            votes = Vote.objects.filter(room=room)
 
 
 class PlaySongView(APIView):
@@ -114,3 +127,26 @@ class PauseSongView(APIView):
 
         return Response({}, status.HTTP_403_FORBIDDEN)
 
+
+class SkipSongView(APIView):
+    def post(self, request, format=None):
+        establish_session(request)
+
+        room_code = self.request.session.get('room_code')
+        room = get_room_by_code(room_code)
+
+        votes = Vote.objects.filter(room=room, songId=room.currentSong)
+        votes_needed = room.votesToSkip
+
+        if self.request.session.session_key == room.host or len(votes) + 1 >= votes_needed:
+            votes.delete()
+            skip_song(room.host)
+        else:
+            vote = Vote(
+                user=self.request.session.session_key,
+                room=room,
+                songId=room.currentSong
+            )
+            vote.save()
+
+        return Response({}, status.HTTP_204_NO_CONTENT)
